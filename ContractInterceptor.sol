@@ -1,7 +1,7 @@
 pragma solidity ^0.4.25;
 
 import "./DeployAuthManager.sol";
-import "./MethodAuthManager.sol";
+import "./ContractAuthPrecompiled.sol";
 
 contract ContractInterceptor {
     DeployAuthManager private _deployAuthMgr;
@@ -29,11 +29,11 @@ contract ContractInterceptor {
      * @param account
      */
     function call(
-        address methodAuthMgrAddr,
+        address contractAddr,
         bytes4 methodId,
         address account
-    ) public view returns(bool) {
-        return checkAccessMethodAuth(methodAuthMgrAddr, methodId, account);
+    ) public view returns (bool) {
+        return checkAccessMethodAuth(contractAddr, methodId, account);
     }
 
     /*
@@ -43,11 +43,11 @@ contract ContractInterceptor {
      * @param account
      */
     function sendTransaction(
-        address methodAuthMgrAddr,
+        address contractAddr,
         bytes4 methodId,
         address account
     ) public view returns (bool) {
-        return checkAccessMethodAuth(methodAuthMgrAddr, methodId, account);
+        return checkAccessMethodAuth(contractAddr, methodId, account);
     }
 
     /*
@@ -57,11 +57,11 @@ contract ContractInterceptor {
      * @param account
      */
     function checkAccessMethodAuth(
-        address methodAuthMgrAddr,
+        address contractAddr,
         bytes4 methodId,
         address account
     ) internal view returns (bool) {
-        MethodAuthManager mgr = MethodAuthManager(methodAuthMgrAddr);
-        return mgr.hasMethodAccessAuth(methodId, account);
+        ContractAuthPrecompiled auth = ContractAuthPrecompiled(0x1005);
+        return auth.checkMethodAuth(contractAddr, methodId, account);
     }
 }
