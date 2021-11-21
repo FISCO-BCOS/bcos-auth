@@ -1,5 +1,6 @@
-pragma solidity ^0.4.25;
-//pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.0;
+// pragma experimental ABIEncoderV2;
 
 import "./Committee.sol";
 import "./ProposalManager.sol";
@@ -35,8 +36,8 @@ contract CommitteeManager {
     }
 
     constructor(
-        address[] initGovernors,
-        uint32[] weights,
+        address[] memory initGovernors,
+        uint32[] memory weights,
         uint8 participatesRate,
         uint8 winRate
     ) public {
@@ -206,7 +207,7 @@ contract CommitteeManager {
      * @param  after the block number interval, the proposal would be outdated.
      */
     function _createProposal(
-        ProposalInfo proposalInfo,
+        ProposalInfo memory proposalInfo,
         uint256 blockNumberInterval
     ) internal returns (uint256) {
         uint256 proposalId = _proposalMgr.create(

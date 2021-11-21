@@ -1,4 +1,5 @@
-pragma solidity ^0.4.25;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.0;
 
 import "./LibAddressSet.sol";
 import "./BasicAuth.sol";
@@ -12,8 +13,8 @@ contract Committee is BasicAuth {
     uint8 public _winRate;
 
     constructor(
-        address[] governorList,
-        uint32[] weightList,
+        address[] memory governorList,
+        uint32[] memory weightList,
         uint8 participatesRate,
         uint8 winRate
     ) public {
@@ -61,8 +62,8 @@ contract Committee is BasicAuth {
         returns (
             uint8 participatesRate,
             uint8 winRate,
-            address[] governors,
-            uint32[] weights
+            address[] memory governors,
+            uint32[] memory weights
         )
     {
         governors = _governorSet.getAll();
@@ -95,11 +96,10 @@ contract Committee is BasicAuth {
      * @param for voters list
      * @param against voters list
      */
-    function determineVoteResult(address[] agreeVoters, address[] againstVoters)
-        public
-        view
-        returns (uint8)
-    {
+    function determineVoteResult(
+        address[] memory agreeVoters,
+        address[] memory againstVoters
+    ) public view returns (uint8) {
         uint32 agreeVotes = getWeights(agreeVoters);
         uint32 doneVotes = agreeVotes + getWeights(againstVoters);
         uint32 allVotes = getWeights(_governorSet.getAll());
@@ -120,7 +120,7 @@ contract Committee is BasicAuth {
      * compute weights with given votes list
 +     * @param computed voters list
      */
-    function getWeights(address[] votes) public view returns (uint32) {
+    function getWeights(address[] memory votes) public view returns (uint32) {
         uint32 totalVotes = 0;
         for (uint32 i = 0; i < votes.length; i++) {
             totalVotes += _weightMapping[votes[i]];

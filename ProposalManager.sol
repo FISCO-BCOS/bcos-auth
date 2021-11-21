@@ -1,4 +1,5 @@
-pragma solidity ^0.4.25;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.0;
 
 import "./BasicAuth.sol";
 import "./Committee.sol";
@@ -154,8 +155,8 @@ contract ProposalManager is BasicAuth {
             uint8 proposalType,
             uint256 blockNumberInterval,
             uint8 status,
-            address[] agreeVoters,
-            address[] againstVoters
+            address[] memory agreeVoters,
+            address[] memory againstVoters
         )
     {
         ProposalInfo storage proposal = _proposals[proposalId];
@@ -194,7 +195,7 @@ contract ProposalManager is BasicAuth {
     /**
      * judge account if voted for the proposal
      */
-    function hasVoted(ProposalInfo proposal, address account)
+    function hasVoted(ProposalInfo memory proposal, address account)
         internal
         pure
         returns (bool)
@@ -208,7 +209,7 @@ contract ProposalManager is BasicAuth {
         return false;
     }
 
-    function contains(address[] array, address value)
+    function contains(address[] memory array, address value)
         internal
         pure
         returns (bool)
