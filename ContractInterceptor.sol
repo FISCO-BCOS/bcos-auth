@@ -1,16 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.6.0;
 
-import "./DeployAuthManager.sol";
 import "./ContractAuthPrecompiled.sol";
 
 contract ContractInterceptor {
-    DeployAuthManager private _deployAuthMgr;
-
-    constructor(address deployAuthMgr) public {
-        _deployAuthMgr = DeployAuthManager(deployAuthMgr);
-    }
-
     //function login(address account) public view {}
 
     //function logout(address account) public view {}
@@ -20,7 +13,8 @@ contract ContractInterceptor {
      * @param account
      */
     function create(address account) public view returns (bool) {
-        return _deployAuthMgr.hasDeployAuth(account);
+        ContractAuthPrecompiled auth = ContractAuthPrecompiled(0x1005);
+        return auth.hasDeployAuth(account);
     }
 
     /*

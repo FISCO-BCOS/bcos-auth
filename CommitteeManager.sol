@@ -4,7 +4,6 @@ pragma solidity ^0.6.0;
 
 import "./Committee.sol";
 import "./ProposalManager.sol";
-import "./DeployAuthManager.sol";
 import "./ContractAuthPrecompiled.sol";
 
 contract CommitteeManager {
@@ -12,8 +11,8 @@ contract CommitteeManager {
     Committee public _committee;
     // proposal manager
     ProposalManager public _proposalMgr;
-    // deploy auth manager
-    DeployAuthManager public _deployAuthMgr;
+
+    ContractAuthPrecompiled public _contractPrecompiled;
 
     struct ProposalInfo {
         // 11-set governor weight; 12-set rate; 21-set deploy auth type; 22-modify deploy auth; 31-reset admin
@@ -41,6 +40,7 @@ contract CommitteeManager {
         uint8 participatesRate,
         uint8 winRate
     ) public {
+        _contractPrecompiled = ContractAuthPrecompiled(0x1005);
         _committee = new Committee(
             initGovernors,
             weights,
@@ -48,7 +48,6 @@ contract CommitteeManager {
             winRate
         );
         _proposalMgr = new ProposalManager(address(this), address(_committee));
-        _deployAuthMgr = new DeployAuthManager(address(this));
     }
 
     /*
@@ -116,7 +115,7 @@ contract CommitteeManager {
         uint256 blockNumberInterval
     ) public onlyGovernor returns (uint256 currentproposalId) {
         require(
-            _deployAuthMgr._deployAuthType() != deployAuthType,
+            _contractPrecompiled.deployType() != deployAuthType,
             "the current deploy auth type is the same as you want to set"
         );
 
@@ -125,7 +124,7 @@ contract CommitteeManager {
         uint8Array[0] = deployAuthType;
         ProposalInfo memory proposalInfo = ProposalInfo(
             21,
-            address(_deployAuthMgr),
+            address(_contractPrecompiled),
             uint8Array,
             0,
             addressArray,
@@ -145,11 +144,11 @@ contract CommitteeManager {
         uint256 blockNumberInterval
     ) public onlyGovernor returns (uint256 currentproposalId) {
         require(
-            openFlag && !_deployAuthMgr.hasDeployAuth(account),
+            openFlag && !_contractPrecompiled.hasDeployAuth(account),
             "account has the auth of deploying contract."
         );
         require(
-            !openFlag && _deployAuthMgr.hasDeployAuth(account),
+            !openFlag && _contractPrecompiled.hasDeployAuth(account),
             "account has no auth of deploying contract."
         );
 
@@ -177,12 +176,10 @@ contract CommitteeManager {
         address contractAddr,
         uint256 blockNumberInterval
     ) public onlyGovernor returns (uint256 currentproposalId) {
-        ContractAuthPrecompiled methodAuth = ContractAuthPrecompiled(0x1005);
-
         require(contractAddr != address(0), "contract addres not exists.");
         // require(methodAuthMgr._owner() == address(this), "caller is not owner");
         require(
-            newAdmin != methodAuth.getAdmin(contractAddr),
+            newAdmin != _contractPrecompiled.getAdmin(contractAddr),
             "the account has been the admin of concurrt contract."
         );
         address[] memory addressArray = new address[](1);
@@ -252,19 +249,22 @@ contract CommitteeManager {
                     proposalInfo.uint8Array[1]
                 );
             } else if (proposalType == 21) {
-                _deployAuthMgr.setDeployAuthType(proposalInfo.uint8Array[0]);
+                _contractPrecompiled.setDeployAuthType(
+                    proposalInfo.uint8Array[0]
+                );
             } else if (proposalType == 22) {
                 if (proposalInfo.flag) {
-                    _deployAuthMgr.openDeployAuth(proposalInfo.addressArray[0]);
+                    _contractPrecompiled.openDeployAuth(
+                        proposalInfo.addressArray[0]
+                    );
                 } else {
-                    _deployAuthMgr.closeDeployAuth(
+                    _contractPrecompiled.closeDeployAuth(
                         proposalInfo.addressArray[0]
                     );
                 }
             } else if (proposalType == 31) {
-                ContractAuthPrecompiled auth = ContractAuthPrecompiled(0x1005);
                 // (contractAddress, adminAddress)
-                auth.resetAdmin(
+                _contractPrecompiled.resetAdmin(
                     proposalInfo.resourceId,
                     proposalInfo.addressArray[0]
                 );
