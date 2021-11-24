@@ -1,15 +1,9 @@
-pragma solidity ^0.4.25;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.0;
 
-import "./DeployAuthManager.sol";
-import "./MethodAuthManager.sol";
+import "./ContractAuthPrecompiled.sol";
 
 contract ContractInterceptor {
-    DeployAuthManager private _deployAuthMgr;
-
-    constructor(address deployAuthMgr) public {
-        _deployAuthMgr = DeployAuthManager(deployAuthMgr);
-    }
-
     //function login(address account) public view {}
 
     //function logout(address account) public view {}
@@ -19,7 +13,8 @@ contract ContractInterceptor {
      * @param account
      */
     function create(address account) public view returns (bool) {
-        return _deployAuthMgr.hasDeployAuth(account);
+        ContractAuthPrecompiled auth = ContractAuthPrecompiled(0x1005);
+        return auth.hasDeployAuth(account);
     }
 
     /*
@@ -29,11 +24,11 @@ contract ContractInterceptor {
      * @param account
      */
     function call(
-        address methodAuthMgrAddr,
+        address contractAddr,
         bytes4 methodId,
         address account
-    ) public view returns(bool) {
-        return checkAccessMethodAuth(methodAuthMgrAddr, methodId, account);
+    ) public view returns (bool) {
+        return checkAccessMethodAuth(contractAddr, methodId, account);
     }
 
     /*
@@ -43,11 +38,11 @@ contract ContractInterceptor {
      * @param account
      */
     function sendTransaction(
-        address methodAuthMgrAddr,
+        address contractAddr,
         bytes4 methodId,
         address account
     ) public view returns (bool) {
-        return checkAccessMethodAuth(methodAuthMgrAddr, methodId, account);
+        return checkAccessMethodAuth(contractAddr, methodId, account);
     }
 
     /*
@@ -57,11 +52,11 @@ contract ContractInterceptor {
      * @param account
      */
     function checkAccessMethodAuth(
-        address methodAuthMgrAddr,
+        address contractAddr,
         bytes4 methodId,
         address account
     ) internal view returns (bool) {
-        MethodAuthManager mgr = MethodAuthManager(methodAuthMgrAddr);
-        return mgr.hasMethodAccessAuth(methodId, account);
+        ContractAuthPrecompiled auth = ContractAuthPrecompiled(0x1005);
+        return auth.checkMethodAuth(contractAddr, methodId, account);
     }
 }

@@ -1,18 +1,18 @@
-pragma solidity ^0.4.25;
-//pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.0;
+// pragma experimental ABIEncoderV2;
 
 import "./Committee.sol";
 import "./ProposalManager.sol";
-import "./DeployAuthManager.sol";
-import "./MethodAuthManager.sol";
+import "./ContractAuthPrecompiled.sol";
 
 contract CommitteeManager {
     // Governors and threshold
     Committee public _committee;
     // proposal manager
     ProposalManager public _proposalMgr;
-    // deploy auth manager
-    DeployAuthManager public _deployAuthMgr;
+
+    ContractAuthPrecompiled public _contractPrecompiled;
 
     struct ProposalInfo {
         // 11-set governor weight; 12-set rate; 21-set deploy auth type; 22-modify deploy auth; 31-reset admin
@@ -35,11 +35,12 @@ contract CommitteeManager {
     }
 
     constructor(
-        address[] initGovernors,
-        uint32[] weights,
+        address[] memory initGovernors,
+        uint32[] memory weights,
         uint8 participatesRate,
         uint8 winRate
     ) public {
+        _contractPrecompiled = ContractAuthPrecompiled(0x1005);
         _committee = new Committee(
             initGovernors,
             weights,
@@ -47,7 +48,6 @@ contract CommitteeManager {
             winRate
         );
         _proposalMgr = new ProposalManager(address(this), address(_committee));
-        _deployAuthMgr = new DeployAuthManager(address(this));
     }
 
     /*
@@ -115,7 +115,7 @@ contract CommitteeManager {
         uint256 blockNumberInterval
     ) public onlyGovernor returns (uint256 currentproposalId) {
         require(
-            _deployAuthMgr._deployAuthType() != deployAuthType,
+            _contractPrecompiled.deployType() != deployAuthType,
             "the current deploy auth type is the same as you want to set"
         );
 
@@ -124,7 +124,7 @@ contract CommitteeManager {
         uint8Array[0] = deployAuthType;
         ProposalInfo memory proposalInfo = ProposalInfo(
             21,
-            address(_deployAuthMgr),
+            address(_contractPrecompiled),
             uint8Array,
             0,
             addressArray,
@@ -144,11 +144,11 @@ contract CommitteeManager {
         uint256 blockNumberInterval
     ) public onlyGovernor returns (uint256 currentproposalId) {
         require(
-            openFlag && !_deployAuthMgr.hasDeployAuth(account),
+            openFlag && !_contractPrecompiled.hasDeployAuth(account),
             "account has the auth of deploying contract."
         );
         require(
-            !openFlag && _deployAuthMgr.hasDeployAuth(account),
+            !openFlag && _contractPrecompiled.hasDeployAuth(account),
             "account has no auth of deploying contract."
         );
 
@@ -169,31 +169,25 @@ contract CommitteeManager {
     /*
      * submit an propsal of resetting contract admin
      * @param newAdmin
-     * @param methodAuthAddr
+     * @param contractAddr the address of contract which will propose to reset admin
      */
     function createResetAdminProposal(
         address newAdmin,
-        address methodAuthAddr,
+        address contractAddr,
         uint256 blockNumberInterval
     ) public onlyGovernor returns (uint256 currentproposalId) {
-        MethodAuthManager methodAuthMgr = MethodAuthManager(methodAuthAddr);
-
+        require(contractAddr != address(0), "contract addres not exists.");
+        // require(methodAuthMgr._owner() == address(this), "caller is not owner");
         require(
-            methodAuthMgr != address(0),
-            "method auth manager contract not exists."
-        );
-        require(methodAuthMgr._owner() == address(this), "caller is not owner");
-        require(
-            newAdmin != methodAuthMgr._admin(),
+            newAdmin != _contractPrecompiled.getAdmin(contractAddr),
             "the account has been the admin of concurrt contract."
         );
-        address[] memory addressArray = new address[](2);
+        address[] memory addressArray = new address[](1);
         uint8[] memory uint8Array;
-        addressArray[0] = methodAuthAddr;
-        addressArray[1] = newAdmin;
+        addressArray[0] = newAdmin;
         ProposalInfo memory proposalInfo = ProposalInfo(
             31,
-            methodAuthMgr._contractAddress(),
+            contractAddr,
             uint8Array,
             0,
             addressArray,
@@ -210,7 +204,7 @@ contract CommitteeManager {
      * @param  after the block number interval, the proposal would be outdated.
      */
     function _createProposal(
-        ProposalInfo proposalInfo,
+        ProposalInfo memory proposalInfo,
         uint256 blockNumberInterval
     ) internal returns (uint256) {
         uint256 proposalId = _proposalMgr.create(
@@ -255,20 +249,25 @@ contract CommitteeManager {
                     proposalInfo.uint8Array[1]
                 );
             } else if (proposalType == 21) {
-                _deployAuthMgr.setDeployAuthType(proposalInfo.uint8Array[0]);
+                _contractPrecompiled.setDeployAuthType(
+                    proposalInfo.uint8Array[0]
+                );
             } else if (proposalType == 22) {
                 if (proposalInfo.flag) {
-                    _deployAuthMgr.openDeployAuth(proposalInfo.addressArray[0]);
+                    _contractPrecompiled.openDeployAuth(
+                        proposalInfo.addressArray[0]
+                    );
                 } else {
-                    _deployAuthMgr.closeDeployAuth(
+                    _contractPrecompiled.closeDeployAuth(
                         proposalInfo.addressArray[0]
                     );
                 }
             } else if (proposalType == 31) {
-                MethodAuthManager methodAuthMgr = MethodAuthManager(
+                // (contractAddress, adminAddress)
+                _contractPrecompiled.resetAdmin(
+                    proposalInfo.resourceId,
                     proposalInfo.addressArray[0]
                 );
-                methodAuthMgr.resetAdmin(proposalInfo.addressArray[1]);
             } else {
                 revert("vote type error.");
             }
@@ -280,12 +279,12 @@ contract CommitteeManager {
      * @param contractAddr: contract address
      * @parma admin: admin who can manage the contract methods auth.
      */
-    function deployMethodAuthMgrContract(address contractAddr, address admin)
-        public
-        returns (address)
-    {
-        return new MethodAuthManager(contractAddr, admin, address(this));
-    }
+    // function deployMethodAuthMgrContract(address contractAddr, address admin)
+    //     public
+    //     returns (address)
+    // {
+    //     return new MethodAuthManager(contractAddr, admin, address(this));
+    // }
 
     /*
      * predicate governor

@@ -1,4 +1,5 @@
-pragma solidity ^0.4.25;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.0;
 
 contract BasicAuth {
     address public _owner;

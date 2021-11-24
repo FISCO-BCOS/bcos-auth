@@ -1,4 +1,5 @@
-pragma solidity ^0.4.25;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.6.0;
 
 library LibAddressSet {
     struct AddressSet {
@@ -32,7 +33,7 @@ library LibAddressSet {
         self.values[toDeleteindexMapping] = lastValue;
         self.indexMapping[lastValue] = toDeleteindexMapping + 1;
         delete self.indexMapping[value];
-        self.values.length--;
+        self.values.pop();
     }
 
     function getSize(AddressSet storage self) internal view returns (uint256) {
