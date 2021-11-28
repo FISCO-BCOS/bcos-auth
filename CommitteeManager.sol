@@ -143,15 +143,6 @@ contract CommitteeManager {
         bool openFlag,
         uint256 blockNumberInterval
     ) public onlyGovernor returns (uint256 currentproposalId) {
-        require(
-            openFlag && !_contractPrecompiled.hasDeployAuth(account),
-            "account has the auth of deploying contract."
-        );
-        require(
-            !openFlag && _contractPrecompiled.hasDeployAuth(account),
-            "account has no auth of deploying contract."
-        );
-
         address[] memory addressArray = new address[](1);
         addressArray[0] = account;
         uint8[] memory uint8Array;
