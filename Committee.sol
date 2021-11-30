@@ -43,6 +43,7 @@ contract Committee is BasicAuth {
      */
     function setWeight(address governor, uint32 weight) public onlyOwner {
         if (weight == 0) {
+            require(governor != msg.sender, "You can not remove yourself!");
             delete _weightMapping[governor];
             _governorSet.remove(governor);
         } else if (_governorSet.contains(governor)) {
