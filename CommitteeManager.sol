@@ -230,6 +230,12 @@ contract CommitteeManager {
             uint8 proposalType = getProposalType(proposalId);
             proposalInfo = _proposalInfoMap[proposalId];
             if (proposalType == 11) {
+                if (proposalInfo.weight == 0) {
+                    require(
+                        proposalInfo.addressArray[0] != msg.sender,
+                        "You can not remove yourself!"
+                    );
+                }
                 _committee.setWeight(
                     proposalInfo.addressArray[0],
                     proposalInfo.weight
