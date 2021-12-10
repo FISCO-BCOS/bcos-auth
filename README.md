@@ -1,4 +1,14 @@
-## 部署说明
+![](https://github.com/FISCO-BCOS/FISCO-BCOS/blob/master/docs/FISCO_BCOS_Logo.svg)
+
+# bcos-auth
+
+bcos-auth是[FISCO BCOS 3.0](https://github.com/FISCO-BCOS/FISCO-BCOS)的权限控制实现，其中CommitteManager.sol以二进制的形式内置在链上，固定地址为0x1005。
+
+## 文档
+
+- [FISCO BCOS 3.0文档](https://fisco-bcos-doc.readthedocs.io/zh_CN/latest)
+
+## 使用说明
 
 ### 1. 账户生成
 
@@ -35,3 +45,13 @@ CommitteeManager内部会部署提案管理合约和部署权限管理合约。�
 ### 7. 调用合约接口
 
 在调用合约接口时，系统会通过拦截器合约ContractInterceptor中的call或者sendTransaction对接口访问权限进行校验。
+
+## 加入社区
+
+FISCO BCOS开源社区是国内活跃的开源社区，社区长期为机构和个人开发者提供各类支持与帮助。已有来自各行业的数千名技术爱好者在研究和使用FISCO BCOS。如您对FISCO BCOS开源技术及应用感兴趣，欢迎加入社区获得更多支持与帮助。
+
+![](https://raw.githubusercontent.com/FISCO-BCOS/LargeFiles/master/images/QR_image.png)
+
+## License
+
+bcos-ledger的开源协议为Apache License, 详情参考[LICENSE](./LICENSE).
