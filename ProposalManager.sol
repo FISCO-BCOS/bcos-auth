@@ -35,6 +35,11 @@ contract ProposalManager is BasicAuth {
         _;
     }
 
+    modifier proposalVotable(uint256 proposalId) {
+        require(_proposals[proposalId].status == 1, "Proposal is not votable");
+        _;
+    }
+
     constructor(address committeeMgrAddress, address committeeAddress) public {
         setOwner(committeeMgrAddress);
         _committee = Committee(committeeAddress);
@@ -111,7 +116,13 @@ contract ProposalManager is BasicAuth {
         uint256 proposalId,
         bool agree,
         address voterAddress
-    ) public onlyOwner proposalExist(proposalId) returns (uint8) {
+    )
+        public
+        onlyOwner
+        proposalExist(proposalId)
+        proposalVotable(proposalId)
+        returns (uint8)
+    {
         ProposalInfo storage proposal = _proposals[proposalId];
         require(!hasVoted(proposal, voterAddress), "Already voted");
         if (agree) {
