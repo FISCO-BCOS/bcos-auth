@@ -93,31 +93,6 @@ contract Committee is BasicAuth {
     }
 
     /*
-     * predicate vote result and return the status
-     * @param for voters list
-     * @param against voters list
-     */
-    function determineVoteResult(
-        address[] memory agreeVoters,
-        address[] memory againstVoters
-    ) public view returns (uint8) {
-        uint32 agreeVotes = getWeights(agreeVoters);
-        uint32 doneVotes = agreeVotes + getWeights(againstVoters);
-        uint32 allVotes = getWeights(_governorSet.getAll());
-        //1. Checks enough voters: totalVotes/totalVotesPower >= p_rate/100
-        if (doneVotes * 100 < allVotes * _participatesRate) {
-            //not enough voters, need more votes
-            return 1;
-        }
-        //2. Checks whethere for votes wins: agreeVotes/totalVotes >= win_rate/100
-        if (agreeVotes * 100 >= _winRate * doneVotes) {
-            return 2;
-        } else {
-            return 3;
-        }
-    }
-
-    /*
      * compute weights with given votes list
 +     * @param computed voters list
      */
@@ -127,5 +102,12 @@ contract Committee is BasicAuth {
             totalVotes += _weightMapping[votes[i]];
         }
         return totalVotes;
+    }
+
+    /*
+     * compute weights with governor set
+     */
+    function getWeights() public view returns (uint32) {
+        return getWeights(_governorSet.getAll());
     }
 }
