@@ -5,22 +5,34 @@ pragma solidity ^0.6.0;
 import "./Committee.sol";
 import "./ProposalManager.sol";
 import "./ContractAuthPrecompiled.sol";
+import "./ConsensusPrecompiled.sol";
+import "./SystemConfigPrecompiled.sol";
 
 contract CommitteeManager {
     // Governors and threshold
     Committee public _committee;
     // proposal manager
     ProposalManager public _proposalMgr;
-
-    ContractAuthPrecompiled public _contractPrecompiled;
+    SystemConfigPrecompiled constant _systemConfigPrecompiled =
+        SystemConfigPrecompiled(0x1000);
+    ConsensusPrecompiled constant _consensusPrecompiled =
+        ConsensusPrecompiled(0x1003);
+    ContractAuthPrecompiled constant _contractPrecompiled =
+        ContractAuthPrecompiled(0x1005);
 
     struct ProposalInfo {
-        // 11-set governor weight; 12-set rate; 21-set deploy auth type; 22-modify deploy auth; 31-reset admin
+        // Committee management: 11-set governor weight; 12-set rate; 13-upgrade VoteComputer contract;
+        // access control: 21-set deploy auth type; 22-modify deploy auth;
+        // contract admin: 31-reset admin
+        // system config management: 41- set config
+        // consensus node management: 51- set weight (weigh > 0, sealer; weight = 0, observer), 52- remove
         uint8 proposalType;
         // unique address
         address resourceId;
         // uint8 array
         uint8[] uint8Array;
+        // string array
+        string[] strArray;
         uint32 weight;
         // address array
         address[] addressArray;
@@ -40,7 +52,7 @@ contract CommitteeManager {
         uint8 participatesRate,
         uint8 winRate
     ) public {
-        _contractPrecompiled = ContractAuthPrecompiled(0x1005);
+        //_contractPrecompiled = ContractAuthPrecompiled(0x1005);
         _committee = new Committee(
             initGovernors,
             weights,
@@ -63,11 +75,13 @@ contract CommitteeManager {
     ) public onlyGovernor returns (uint256 currentproposalId) {
         address[] memory addressArray = new address[](1);
         uint8[] memory uint8Array;
+        string[] memory strArray;
         addressArray[0] = account;
         ProposalInfo memory proposalInfo = ProposalInfo(
             11,
             account,
             uint8Array,
+            strArray,
             weight,
             addressArray,
             true
@@ -93,12 +107,40 @@ contract CommitteeManager {
         require(winRate >= 0 && winRate <= 100, "invalid range of winRate");
         address[] memory addressArray;
         uint8[] memory uint8Array = new uint8[](2);
+        string[] memory strArray;
         uint8Array[0] = participatesRate;
         uint8Array[1] = winRate;
         ProposalInfo memory proposalInfo = ProposalInfo(
             12,
             address(this),
             uint8Array,
+            strArray,
+            0,
+            addressArray,
+            false
+        );
+        currentproposalId = _createProposal(proposalInfo, blockNumberInterval);
+    }
+
+    /*
+     * submit an propsal of upgrade VoteCompter.sol
+     * @param new address of VoteComputer
+     * @param contractAddr the address of contract which will propose to reset admin
+     */
+    function createUpgradeVoteComputerProposal(
+        address newAddr,
+        uint256 blockNumberInterval
+    ) public onlyGovernor returns (uint256 currentproposalId) {
+        require(newAddr != address(0), "contract address not exists.");
+        address[] memory addressArray = new address[](1);
+        uint8[] memory uint8Array;
+        string[] memory strArray;
+        addressArray[0] = newAddr;
+        ProposalInfo memory proposalInfo = ProposalInfo(
+            13,
+            address(_proposalMgr),
+            uint8Array,
+            strArray,
             0,
             addressArray,
             false
@@ -121,11 +163,13 @@ contract CommitteeManager {
 
         address[] memory addressArray;
         uint8[] memory uint8Array = new uint8[](1);
+        string[] memory strArray;
         uint8Array[0] = deployAuthType;
         ProposalInfo memory proposalInfo = ProposalInfo(
             21,
             address(_contractPrecompiled),
             uint8Array,
+            strArray,
             0,
             addressArray,
             false
@@ -146,10 +190,12 @@ contract CommitteeManager {
         address[] memory addressArray = new address[](1);
         addressArray[0] = account;
         uint8[] memory uint8Array;
+        string[] memory strArray;
         ProposalInfo memory proposalInfo = ProposalInfo(
             22,
             account,
             uint8Array,
+            strArray,
             0,
             addressArray,
             openFlag
@@ -167,7 +213,7 @@ contract CommitteeManager {
         address contractAddr,
         uint256 blockNumberInterval
     ) public onlyGovernor returns (uint256 currentproposalId) {
-        require(contractAddr != address(0), "contract addres not exists.");
+        require(contractAddr != address(0), "contract address not exists.");
         // require(methodAuthMgr._owner() == address(this), "caller is not owner");
         require(
             newAdmin != _contractPrecompiled.getAdmin(contractAddr),
@@ -175,14 +221,100 @@ contract CommitteeManager {
         );
         address[] memory addressArray = new address[](1);
         uint8[] memory uint8Array;
+        string[] memory strArray;
         addressArray[0] = newAdmin;
         ProposalInfo memory proposalInfo = ProposalInfo(
             31,
             contractAddr,
             uint8Array,
+            strArray,
             0,
             addressArray,
             false
+        );
+        currentproposalId = _createProposal(proposalInfo, blockNumberInterval);
+    }
+
+    /*
+     * submit a propsal of set system config
+     * @param key （tx_count_limit,consensus_leader_period,tx_gas_limit)
+     * @param value
+     */
+    function createSetSysConfigProposal(
+        string memory key,
+        string memory value,
+        uint256 blockNumberInterval
+    ) public onlyGovernor returns (uint256 currentproposalId) {
+        require(bytes(key).length > 1, "invalid key length.");
+        address[] memory addressArray;
+        uint8[] memory uint8Array;
+        string[] memory strArray = new string[](2);
+        strArray[0] = key;
+        strArray[1] = value;
+        ProposalInfo memory proposalInfo = ProposalInfo(
+            41,
+            address(_systemConfigPrecompiled),
+            uint8Array,
+            strArray,
+            0,
+            addressArray,
+            false
+        );
+        currentproposalId = _createProposal(proposalInfo, blockNumberInterval);
+    }
+
+    /*
+     * submit a proposal of set consensus weight
+     * @param node
+     * @param weight: weigh > 0, sealer; weight = 0, observer
+     * @param addFlag true-> add, false-> set
+     * @param blockNumberInterval, after current block number, it will be outdated.
+     */
+    function createSetConsensusWeightProposal(
+        string memory node,
+        uint32 weight,
+        bool addFlag,
+        uint256 blockNumberInterval
+    ) public onlyGovernor returns (uint256 currentproposalId) {
+        require(bytes(node).length > 1, "invalid node.");
+        address[] memory addressArray;
+        uint8[] memory uint8Array;
+        string[] memory strArray = new string[](1);
+        strArray[0] = node;
+        ProposalInfo memory proposalInfo = ProposalInfo(
+            51,
+            address(_consensusPrecompiled),
+            uint8Array,
+            strArray,
+            weight,
+            addressArray,
+            addFlag
+        );
+        currentproposalId = _createProposal(proposalInfo, blockNumberInterval);
+    }
+
+    /*
+     * submit a proposal of remove node
+     * @param node
+     * @param blockNumberInterval, after current block number, it will be outdated.
+     */
+    function createRmNodeProposal(
+        string memory node,
+        uint256 blockNumberInterval
+    ) public onlyGovernor returns (uint256 currentproposalId) {
+        require(bytes(node).length > 1, "invalid node.");
+        address[] memory addressArray;
+        uint8[] memory uint8Array;
+        string[] memory strArray = new string[](1);
+        strArray[0] = node;
+        ProposalInfo memory proposalInfo = ProposalInfo(
+            52,
+            address(_consensusPrecompiled),
+            uint8Array,
+            strArray,
+            0,
+            addressArray,
+            true
         );
         currentproposalId = _createProposal(proposalInfo, blockNumberInterval);
     }
@@ -245,6 +377,8 @@ contract CommitteeManager {
                     proposalInfo.uint8Array[0],
                     proposalInfo.uint8Array[1]
                 );
+            } else if (proposalType == 13) {
+                _proposalMgr.setVoteComputer(proposalInfo.addressArray[0]);
             } else if (proposalType == 21) {
                 _contractPrecompiled.setDeployAuthType(
                     proposalInfo.uint8Array[0]
@@ -265,23 +399,36 @@ contract CommitteeManager {
                     proposalInfo.resourceId,
                     proposalInfo.addressArray[0]
                 );
+            } else if (proposalType == 41) {
+                _systemConfigPrecompiled.setValueByKey(
+                    proposalInfo.strArray[0],
+                    proposalInfo.strArray[1]
+                );
+            } else if (proposalType == 51) {
+                if (proposalInfo.flag) {
+                    if (proposalInfo.weight == 0) {
+                        _consensusPrecompiled.addObserver(
+                            proposalInfo.strArray[0]
+                        );
+                    } else {
+                        _consensusPrecompiled.addSealer(
+                            proposalInfo.strArray[0],
+                            uint256(proposalInfo.weight)
+                        );
+                    }
+                } else {
+                    _consensusPrecompiled.setWeight(
+                        proposalInfo.strArray[0],
+                        uint256(proposalInfo.weight)
+                    );
+                }
+            } else if (proposalType == 52) {
+                _consensusPrecompiled.remove(proposalInfo.strArray[0]);
             } else {
                 revert("vote type error.");
             }
         }
     }
-
-    /*
-     * when deploying a contract by user, system should deploy the corresponding contract for managing the methods auth.
-     * @param contractAddr: contract address
-     * @parma admin: admin who can manage the contract methods auth.
-     */
-    // function deployMethodAuthMgrContract(address contractAddr, address admin)
-    //     public
-    //     returns (address)
-    // {
-    //     return new MethodAuthManager(contractAddr, admin, address(this));
-    // }
 
     /*
      * predicate governor

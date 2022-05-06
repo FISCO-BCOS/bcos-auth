@@ -2,7 +2,7 @@
 pragma solidity ^0.6.0;
 
 import "./BasicAuth.sol";
-import "./Committee.sol";
+import "./VoteComputer.sol";
 
 contract ProposalManager is BasicAuth {
     struct ProposalInfo {
@@ -22,7 +22,7 @@ contract ProposalManager is BasicAuth {
         address[] againstVoters;
     }
     // Committee handler
-    Committee public _committee;
+    VoteComputer public _voteComputer;
     // auto generated proposal id
     uint256 public _proposalCount;
     // (id, proposal)
@@ -41,8 +41,11 @@ contract ProposalManager is BasicAuth {
     }
 
     constructor(address committeeMgrAddress, address committeeAddress) public {
-        setOwner(committeeMgrAddress);
-        _committee = Committee(committeeAddress);
+        _voteComputer = new VoteComputer(committeeMgrAddress, committeeAddress);
+    }
+
+    function setVoteComputer(address addr) public {
+        _voteComputer = VoteComputer(addr);
     }
 
     /*
@@ -130,7 +133,7 @@ contract ProposalManager is BasicAuth {
         } else {
             proposal.againstVoters.push(voterAddress);
         }
-        uint8 status = _committee.determineVoteResult(
+        uint8 status = _voteComputer.determineVoteResult(
             proposal.agreeVoters,
             proposal.againstVoters
         );
