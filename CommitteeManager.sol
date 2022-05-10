@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.0;
+pragma solidity >=0.6.10 <0.8.20;
 // pragma experimental ABIEncoderV2;
 
 import "./Committee.sol";
@@ -14,11 +14,11 @@ contract CommitteeManager {
     // proposal manager
     ProposalManager public _proposalMgr;
     SystemConfigPrecompiled constant _systemConfigPrecompiled =
-        SystemConfigPrecompiled(0x1000);
+        SystemConfigPrecompiled(address(0x1000));
     ConsensusPrecompiled constant _consensusPrecompiled =
-        ConsensusPrecompiled(0x1003);
+        ConsensusPrecompiled(address(0x1003));
     ContractAuthPrecompiled constant _contractPrecompiled =
-        ContractAuthPrecompiled(0x1005);
+        ContractAuthPrecompiled(address(0x1005));
 
     struct ProposalInfo {
         // Committee management: 11-set governor weight; 12-set rate; 13-upgrade VoteComputer contract;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.0;
+pragma solidity >=0.6.10 <0.8.20;
 
 import "./ContractAuthPrecompiled.sol";
 
@@ -13,7 +13,7 @@ contract ContractInterceptor {
      * @param account
      */
     function create(address account) public view returns (bool) {
-        ContractAuthPrecompiled auth = ContractAuthPrecompiled(0x1005);
+        ContractAuthPrecompiled auth = ContractAuthPrecompiled(address(0x1005));
         return auth.hasDeployAuth(account);
     }
 
@@ -56,7 +56,7 @@ contract ContractInterceptor {
         bytes4 methodId,
         address account
     ) internal view returns (bool) {
-        ContractAuthPrecompiled auth = ContractAuthPrecompiled(0x1005);
+        ContractAuthPrecompiled auth = ContractAuthPrecompiled(address(0x1005));
         return auth.checkMethodAuth(contractAddr, methodId, account);
     }
 }
