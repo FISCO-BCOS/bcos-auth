@@ -192,7 +192,14 @@ contract ProposalManager is BasicAuth {
         view
         returns (ProposalInfo[] memory)
     {
+        require(
+            from <= _proposalCount,
+            "'from' is greater than 'proposalCount'"
+        );
         require(from <= to, "'from' is greater than 'to'");
+        if (to > _proposalCount) {
+            to = _proposalCount;
+        }
         ProposalInfo[] memory _infoList = new ProposalInfo[](to - from + 1);
         uint256 _infoListIndex = 0;
         for (uint256 i = from; i <= to; i++) {
