@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.0;
+pragma solidity >=0.6.10 <0.8.20;
+pragma experimental ABIEncoderV2;
 
 contract ContractAuthPrecompiled {
     function getAdmin(address contractAddr) public view returns (address) {}
@@ -32,6 +33,23 @@ contract ContractAuthPrecompiled {
         bytes4 func,
         address account
     ) public view returns (bool) {}
+
+    function getMethodAuth(address path, bytes4 func)
+        public
+        view
+        returns (
+            uint8,
+            string[] memory,
+            string[] memory
+        )
+    {}
+
+    function setContractStatus(address _address, bool isFreeze)
+        public
+        returns (int256)
+    {}
+
+    function contractAvailable(address _address) public view returns (bool) {}
 
     function deployType() public view returns (uint256) {}
 

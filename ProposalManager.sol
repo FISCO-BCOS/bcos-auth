@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.0;
+pragma solidity >=0.6.10 <0.8.20;
+pragma experimental ABIEncoderV2;
 
 import "./BasicAuth.sol";
 import "./VoteComputer.sol";
@@ -181,6 +182,24 @@ contract ProposalManager is BasicAuth {
         status = proposal.status;
         agreeVoters = proposal.agreeVoters;
         againstVoters = proposal.againstVoters;
+    }
+
+    /*
+     * get proposalInfo list, range in [from, to]
+     */
+    function getProposalInfoList(uint256 from, uint256 to)
+        public
+        view
+        returns (ProposalInfo[] memory)
+    {
+        require(from <= to, "'from' is greater than 'to'");
+        ProposalInfo[] memory _infoList = new ProposalInfo[](to - from + 1);
+        uint256 _infoListIndex = 0;
+        for (uint256 i = from; i <= to; i++) {
+            ProposalInfo storage proposal = _proposals[i];
+            _infoList[_infoListIndex++] = proposal;
+        }
+        return _infoList;
     }
 
     /*
