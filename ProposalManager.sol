@@ -45,7 +45,7 @@ contract ProposalManager is BasicAuth {
         _voteComputer = new VoteComputer(committeeMgrAddress, committeeAddress);
     }
 
-    function setVoteComputer(address addr) public {
+    function setVoteComputer(address addr) public onlyOwner {
         _voteComputer = VoteComputer(addr);
     }
 
