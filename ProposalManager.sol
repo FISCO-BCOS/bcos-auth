@@ -200,6 +200,9 @@ contract ProposalManager is BasicAuth {
         if (to > _proposalCount) {
             to = _proposalCount;
         }
+        if (from < 1) {
+            from = 1;
+        }
         ProposalInfo[] memory _infoList = new ProposalInfo[](to - from + 1);
         uint256 _infoListIndex = 0;
         for (uint256 i = from; i <= to; i++) {

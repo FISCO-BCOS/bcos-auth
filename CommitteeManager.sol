@@ -20,6 +20,10 @@ contract CommitteeManager {
     ContractAuthPrecompiled constant _contractPrecompiled =
         ContractAuthPrecompiled(address(0x1005));
 
+    // exec proposal when vote pass through
+    // 0 == success, others exec error
+    event execResult(int256);
+
     struct ProposalInfo {
         // Committee management: 11-set governor weight; 12-set rate; 13-upgrade VoteComputer contract;
         // access control: 21-set deploy auth type; 22-modify deploy auth;
@@ -354,11 +358,14 @@ contract CommitteeManager {
      * unified vote
      * @param proposal id
      * @param true or false
+     * @event error code, 
+        0 == exec success, others exec error
      */
     function voteProposal(uint256 proposalId, bool agree) public onlyGovernor {
         uint8 voteStatus = _proposalMgr.vote(proposalId, agree, msg.sender);
         ProposalInfo memory proposalInfo;
         if (voteStatus == 2) {
+            int256 retCode = 0;
             uint8 proposalType = getProposalType(proposalId);
             proposalInfo = _proposalInfoMap[proposalId];
             if (proposalType == 11) {
@@ -380,53 +387,56 @@ contract CommitteeManager {
             } else if (proposalType == 13) {
                 _proposalMgr.setVoteComputer(proposalInfo.addressArray[0]);
             } else if (proposalType == 21) {
-                _contractPrecompiled.setDeployAuthType(
+                retCode = _contractPrecompiled.setDeployAuthType(
                     proposalInfo.uint8Array[0]
                 );
             } else if (proposalType == 22) {
                 if (proposalInfo.flag) {
-                    _contractPrecompiled.openDeployAuth(
+                    retCode = _contractPrecompiled.openDeployAuth(
                         proposalInfo.addressArray[0]
                     );
                 } else {
-                    _contractPrecompiled.closeDeployAuth(
+                    retCode = _contractPrecompiled.closeDeployAuth(
                         proposalInfo.addressArray[0]
                     );
                 }
             } else if (proposalType == 31) {
                 // (contractAddress, adminAddress)
-                _contractPrecompiled.resetAdmin(
+                retCode = _contractPrecompiled.resetAdmin(
                     proposalInfo.resourceId,
                     proposalInfo.addressArray[0]
                 );
             } else if (proposalType == 41) {
-                _systemConfigPrecompiled.setValueByKey(
+                retCode = _systemConfigPrecompiled.setValueByKey(
                     proposalInfo.strArray[0],
                     proposalInfo.strArray[1]
                 );
             } else if (proposalType == 51) {
                 if (proposalInfo.flag) {
                     if (proposalInfo.weight == 0) {
-                        _consensusPrecompiled.addObserver(
+                        retCode = _consensusPrecompiled.addObserver(
                             proposalInfo.strArray[0]
                         );
                     } else {
-                        _consensusPrecompiled.addSealer(
+                        retCode = _consensusPrecompiled.addSealer(
                             proposalInfo.strArray[0],
                             uint256(proposalInfo.weight)
                         );
                     }
                 } else {
-                    _consensusPrecompiled.setWeight(
+                    retCode = _consensusPrecompiled.setWeight(
                         proposalInfo.strArray[0],
                         uint256(proposalInfo.weight)
                     );
                 }
             } else if (proposalType == 52) {
-                _consensusPrecompiled.remove(proposalInfo.strArray[0]);
+                retCode = _consensusPrecompiled.remove(
+                    proposalInfo.strArray[0]
+                );
             } else {
                 revert("vote type error.");
             }
+            emit execResult(retCode);
         }
     }
 
