@@ -2,7 +2,6 @@
 pragma solidity >=0.6.10 <0.8.20;
 
 import "./Committee.sol";
-import "./BasicAuth.sol";
 import "./VoteComputerTemplate.sol";
 
 contract VoteComputer is VoteComputerTemplate {
@@ -37,10 +36,10 @@ contract VoteComputer is VoteComputerTemplate {
     /*
      * calculate vote result and return the status,
      * for convenience, this method for committee check calculate logic
-     * @param agree voter totoal weight
-     * @param voted voter totoal weight
-     * @param all voter totoal weight
-     * @param paricipate threshold, percentage
+     * @param agree voter total weight
+     * @param voted voter total weight
+     * @param all voter total weight
+     * @param participate threshold, percentage
      * @param win threshold, percentage
      */
     function voteResultCalc(
@@ -55,7 +54,7 @@ contract VoteComputer is VoteComputerTemplate {
             //not enough voters, need more votes
             return 1;
         }
-        //2. Checks whethere for votes wins: agreeVotes/totalVotes >= win_rate/100
+        //2. Checks whether for votes wins: agreeVotes/totalVotes >= win_rate/100
         if (agreeVotes * 100 >= winRate * doneVotes) {
             return 2;
         } else {
