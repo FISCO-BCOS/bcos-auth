@@ -11,6 +11,11 @@ abstract contract VoteComputerTemplate is BasicAuth {
     constructor(address committeeMgrAddress, address committeeAddress) public {
         setOwner(committeeMgrAddress);
         _committee = Committee(committeeAddress);
+        // first, test committee exist; second, test committee is helthy
+        require(
+            _committee.getWeights() >= 1,
+            "committee is error, please check address!"
+        );
     }
 
     /*
@@ -26,10 +31,10 @@ abstract contract VoteComputerTemplate is BasicAuth {
     /*
      * calculate vote result and return the status,
      * this method only for committee check calculate logic
-     * @param agree voter totoal weight
-     * @param voted voter totoal weight
-     * @param all voter totoal weight
-     * @param paricipate threshold, percentage
+     * @param agree voter total weight
+     * @param voted voter total weight
+     * @param all voter total weight
+     * @param participate threshold, percentage
      * @param win threshold, percentage
      */
     function voteResultCalc(

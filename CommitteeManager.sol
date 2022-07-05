@@ -95,7 +95,7 @@ contract CommitteeManager {
 
     /*
      * apply set participate rate and win rate.
-     * @param paricipate rate, [0,100]. if 0, always succeed.
+     * @param participate rate, [0,100]. if 0, always succeed.
      * @param win rate, [0,100].
      * @param blockNumberInterval, after current block number, it will be outdated.
      */

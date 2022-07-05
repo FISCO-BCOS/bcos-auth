@@ -23,7 +23,7 @@ contract ProposalManager is BasicAuth {
         address[] againstVoters;
     }
     // Committee handler
-    VoteComputer public _voteComputer;
+    VoteComputerTemplate public _voteComputer;
     // auto generated proposal id
     uint256 public _proposalCount;
     // (id, proposal)
@@ -46,7 +46,14 @@ contract ProposalManager is BasicAuth {
     }
 
     function setVoteComputer(address addr) public onlyOwner {
-        _voteComputer = VoteComputer(addr);
+        VoteComputerTemplate newVoteComputer = VoteComputerTemplate(addr);
+        address[] memory testAddress = new address[](1);
+        testAddress[0] = tx.origin;
+        require(
+            newVoteComputer.determineVoteResult(testAddress, testAddress) > 0,
+            "test vote computer failed"
+        );
+        _voteComputer = newVoteComputer;
     }
 
     /*
