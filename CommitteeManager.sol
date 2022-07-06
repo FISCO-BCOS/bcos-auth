@@ -7,6 +7,7 @@ import "./ProposalManager.sol";
 import "./ContractAuthPrecompiled.sol";
 import "./ConsensusPrecompiled.sol";
 import "./SystemConfigPrecompiled.sol";
+import "./VoteComputerTemplate.sol";
 
 contract CommitteeManager {
     // Governors and threshold
@@ -135,7 +136,19 @@ contract CommitteeManager {
         address newAddr,
         uint256 blockNumberInterval
     ) public onlyGovernor returns (uint256 currentproposalId) {
-        require(newAddr != address(0), "contract address not exists.");
+        address[] memory allGovernors;
+        address[] memory emptyAddress;
+        (, , allGovernors, ) = _committee.getCommitteeInfo();
+        VoteComputerTemplate newVoteComputer = VoteComputerTemplate(newAddr);
+        require(
+            newVoteComputer._committee() == _committee,
+            "new vote computer committee address mismatch"
+        );
+        require(
+            newVoteComputer.determineVoteResult(allGovernors, emptyAddress) ==
+                2,
+            "new vote computer imperfection"
+        );
         address[] memory addressArray = new address[](1);
         uint8[] memory uint8Array;
         string[] memory strArray;
