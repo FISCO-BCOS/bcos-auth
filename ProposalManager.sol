@@ -46,14 +46,7 @@ contract ProposalManager is BasicAuth {
     }
 
     function setVoteComputer(address addr) public onlyOwner {
-        VoteComputerTemplate newVoteComputer = VoteComputerTemplate(addr);
-        address[] memory testAddress = new address[](1);
-        testAddress[0] = tx.origin;
-        require(
-            newVoteComputer.determineVoteResult(testAddress, testAddress) > 0,
-            "test vote computer failed"
-        );
-        _voteComputer = newVoteComputer;
+        _voteComputer = VoteComputerTemplate(addr);
     }
 
     /*
