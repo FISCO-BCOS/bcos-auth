@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.0;
+pragma solidity >=0.6.10 <0.8.20;
+pragma experimental ABIEncoderV2;
 
 import "./BasicAuth.sol";
 import "./VoteComputer.sol";
@@ -22,7 +23,7 @@ contract ProposalManager is BasicAuth {
         address[] againstVoters;
     }
     // Committee handler
-    VoteComputer public _voteComputer;
+    VoteComputerTemplate public _voteComputer;
     // auto generated proposal id
     uint256 public _proposalCount;
     // (id, proposal)
@@ -44,8 +45,8 @@ contract ProposalManager is BasicAuth {
         _voteComputer = new VoteComputer(committeeMgrAddress, committeeAddress);
     }
 
-    function setVoteComputer(address addr) public {
-        _voteComputer = VoteComputer(addr);
+    function setVoteComputer(address addr) public onlyOwner {
+        _voteComputer = VoteComputerTemplate(addr);
     }
 
     /*
@@ -181,6 +182,34 @@ contract ProposalManager is BasicAuth {
         status = proposal.status;
         agreeVoters = proposal.agreeVoters;
         againstVoters = proposal.againstVoters;
+    }
+
+    /*
+     * get proposalInfo list, range in [from, to]
+     */
+    function getProposalInfoList(uint256 from, uint256 to)
+        public
+        view
+        returns (ProposalInfo[] memory)
+    {
+        require(
+            from <= _proposalCount,
+            "'from' is greater than 'proposalCount'"
+        );
+        require(from <= to, "'from' is greater than 'to'");
+        if (to > _proposalCount) {
+            to = _proposalCount;
+        }
+        if (from < 1) {
+            from = 1;
+        }
+        ProposalInfo[] memory _infoList = new ProposalInfo[](to - from + 1);
+        uint256 _infoListIndex = 0;
+        for (uint256 i = from; i <= to; i++) {
+            ProposalInfo storage proposal = _proposals[i];
+            _infoList[_infoListIndex++] = proposal;
+        }
+        return _infoList;
     }
 
     /*
