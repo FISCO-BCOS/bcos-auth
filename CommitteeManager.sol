@@ -8,6 +8,7 @@ import "./ContractAuthPrecompiled.sol";
 import "./ConsensusPrecompiled.sol";
 import "./SystemConfigPrecompiled.sol";
 import "./VoteComputerTemplate.sol";
+import "./Account.sol";
 
 contract CommitteeManager {
     // Governors and threshold
@@ -20,6 +21,8 @@ contract CommitteeManager {
         ConsensusPrecompiled(address(0x1003));
     ContractAuthPrecompiled constant _contractPrecompiled =
         ContractAuthPrecompiled(address(0x1005));
+    AccountManager constant _accountPrecompiled =
+        AccountManager(address(0x10003));
 
     // exec proposal when vote pass through
     // 0 == success, others exec error
@@ -31,6 +34,7 @@ contract CommitteeManager {
         // contract admin: 31-reset admin
         // system config management: 41- set config
         // consensus node management: 51- set weight (weigh > 0, sealer; weight = 0, observer), 52- remove
+        // account management: 61- set account status (if account not exist, will create it first)
         uint8 proposalType;
         // unique address
         address resourceId;
@@ -337,6 +341,38 @@ contract CommitteeManager {
     }
 
     /*
+     * submit a proposal of set account status, if account not exist, it will create first
+     * @param account, account address
+     * @param status, account status, 0- normal, others- abnormal
+     * @param blockNumberInterval, after current block number, it will be outdated.
+     */
+    function createSetAccountProposal(
+        address account,
+        uint8 status,
+        uint256 blockNumberInterval
+    ) public onlyGovernor returns (uint256 currentproposalId) {
+        address[] memory addressArray = new address[](1);
+        uint8[] memory uint8Array = new uint8[](1);
+        string[] memory strArray;
+        addressArray[0] = account;
+        uint8Array[0] = status;
+
+        if (isGovernor(account)) {
+            revert("Should not set governor's status.");
+        }
+        ProposalInfo memory proposalInfo = ProposalInfo(
+            61,
+            address(_accountPrecompiled),
+            uint8Array,
+            strArray,
+            0,
+            addressArray,
+            true
+        );
+        currentproposalId = _createProposal(proposalInfo, blockNumberInterval);
+    }
+
+    /*
      * create proposal
      * @param create address
      * @param  proposal type : 1X-committee；2X-deploy contract auth；3X-admin auth
@@ -445,6 +481,11 @@ contract CommitteeManager {
             } else if (proposalType == 52) {
                 retCode = _consensusPrecompiled.remove(
                     proposalInfo.strArray[0]
+                );
+            } else if (proposalType == 61) {
+                retCode = _accountPrecompiled.setAccountStatus(
+                    proposalInfo.addressArray[0],
+                    AccountStatus(proposalInfo.uint8Array[0])
                 );
             } else {
                 revert("vote type error.");
