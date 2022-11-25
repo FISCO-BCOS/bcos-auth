@@ -12,29 +12,29 @@ contract ContractAuthPrecompiled {
 
     function setMethodAuthType(
         address contractAddr,
-        bytes4 func,
+        bytes4 funcSelector,
         uint8 authType
     ) public returns (int256) {}
 
     function openMethodAuth(
         address contractAddr,
-        bytes4 func,
+        bytes4 funcSelector,
         address account
     ) public returns (int256) {}
 
     function closeMethodAuth(
         address contractAddr,
-        bytes4 func,
+        bytes4 funcSelector,
         address account
     ) public returns (int256) {}
 
     function checkMethodAuth(
         address contractAddr,
-        bytes4 func,
+        bytes4 funcSelector,
         address account
     ) public view returns (bool) {}
 
-    function getMethodAuth(address path, bytes4 func)
+    function getMethodAuth(address path, bytes4 funcSelector)
         public
         view
         returns (
